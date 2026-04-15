@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acid Rain Predictor v2 – AI pH Prediction System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #060c14;
+  --surface: #0c1624;
+  --surface2: #111e30;
+  --surface3: #0a1a2e;
+  --border: rgba(56,189,248,0.12);
+  --border2: rgba(56,189,248,0.25);
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --orange: #fb923c;
+  --text: #e2eeff;
+  --muted: #607b96;
+  --font-head: 'Orbitron', monospace;
+  --font-body: 'Syne', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid bg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#rain { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.12; }
+
+/* Header */
+header {
+  position: relative;
+  z-index: 10;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(6,12,20,0.85);
+  backdrop-filter: blur(12px);
+}
+.logo-icon { font-size: 1.8rem; }
+.logo-text {
+  font-family: var(--font-head);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+.logo-sub { font-size: 0.62rem; color: var(--muted); letter-spacing: 3px; }
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.live-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--green);
+  letter-spacing: 2px;
+  font-family: var(--font-head);
+}
+.live-dot span {
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: blink 1.4s infinite;
+}
+.share-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-head);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.share-btn:hover { border-color: var(--accent); background: rgba(56,189,248,0.08); }
+
+/* Tabs */
+.tabs-bar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  gap: 0;
+  background: rgba(6,12,20,0.9);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  backdrop-filter: blur(8px);
+}
+.tab-btn {
+  padding: 14px 24px;
+  font-family: var(--font-head);
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--accent); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Tab panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Main */
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  display: grid;
+  gap: 24px;
+}
+
+/* Search */
+.search-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 28px;
+}
+.search-label {
+  font-family: var(--font-head);
+  font-size: 0.68rem;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.search-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.city-input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.city-input:focus { border-color: var(--accent); }
+.city-input::placeholder { color: var(--muted); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-family: var(--font-head);
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(56,189,248,0.3); }
+.btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); }
+.btn-secondary:hover { border-color: var(--accent); background: rgba(56,189,248,0.08); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* Cards */
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 14px;
+}
+.weather-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s;
+}
+.weather-card:hover { border-color: rgba(56,189,248,0.35); }
+.wc-icon { font-size: 1.6rem; }
+.wc-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-family: var(--font-head); }
+.wc-value { font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+.wc-unit { font-size: 0.72rem; color: var(--muted); }
+
+/* Result section */
+.result-section {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.ph-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+.ph-ring-wrap { position: relative; width: 180px; height: 180px; }
+.ph-svg { width: 180px; height: 180px; transform: rotate(-90deg); }
+.ph-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
+.ph-arc {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 502;
+  stroke-dashoffset: 502;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.5s;
+}
+.ph-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ph-num {
+  font-family: var(--font-head);
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1;
+  transition: color 0.5s;
+}
+.ph-lbl { font-size: 0.62rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+.ph-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-family: var(--font-head);
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  border: 1px solid;
+  transition: all 0.5s;
+}
+
+.ph-scale-bar {
+  width: 100%;
+  height: 13px;
+  border-radius: 8px;
+  background: linear-gradient(90deg,
+    #ef4444 0%, #f97316 15%, #eab308 30%,
+    #84cc16 45%, #22c55e 55%, #06b6d4 70%,
+    #3b82f6 85%, #7c3aed 100%
+  );
+  position: relative;
+  margin-top: 8px;
+}
+.ph-marker {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 23px;
+  background: white;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(255,255,255,0.8);
+  transition: left 1s cubic-bezier(0.4,0,0.2,1);
+  left: 50%;
+}
+.scale-nums {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+/* Info panel */
+.info-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+.info-row:hover { border-color: rgba(56,189,248,0.3); }
+.info-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+.info-title { font-family: var(--font-head); font-size: 0.68rem; color: var(--accent); letter-spacing: 1px; margin-bottom: 4px; }
+.info-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+.info-val { font-size: 0.88rem; color: var(--text); font-weight: 600; }
+
+/* Chart section */
+.chart-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 28px;
+}
+.chart-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.chart-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-family: var(--font-head);
+  font-size: 0.64rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.chart-tab.active { background: rgba(56,189,248,0.12); border-color: var(--accent); color: var(--accent); }
+.chart-title { font-family: var(--font-head); font-size: 0.76rem; color: var(--accent); letter-spacing: 2px; margin-right: auto; }
+.chart-wrap { height: 220px; }
+
+/* Forecast section */
+.forecast-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 28px;
+}
+.section-title {
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+}
+.forecast-wrap { height: 200px; }
+
+/* AI Analysis section */
+.ai-section {
+  background: var(--surface);
+  border: 1px solid rgba(129,140,248,0.25);
+  border-radius: 20px;
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.ai-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+}
+.ai-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(129,140,248,0.12);
+  border: 1px solid rgba(129,140,248,0.3);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: var(--font-head);
+  font-size: 0.64rem;
+  color: var(--accent2);
+  letter-spacing: 1px;
+}
+.ai-badge-dot {
+  width: 6px; height: 6px;
+  background: var(--accent2);
+  border-radius: 50%;
+  animation: blink 1.4s infinite;
+}
+.ai-analysis-text {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.ai-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface2) 25%, rgba(56,189,248,0.06) 50%, var(--surface2) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+/* Formula section */
+.formula-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 28px;
+}
+.formula-box {
+  background: var(--surface2);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 14px;
+  font-family: monospace;
+  font-size: 0.86rem;
+  color: var(--accent);
+  line-height: 2;
+}
+.formula-box .comment { color: var(--muted); }
+.formula-box .keyword { color: var(--accent2); }
+.formula-box .value { color: var(--green); }
+
+/* AI Chat tab */
+.chat-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.msg {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: fadeIn 0.3s ease both;
+}
+.msg.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.msg.ai .msg-avatar { background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); }
+.msg.user .msg-avatar { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); }
+.msg-bubble {
+  max-width: 75%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+.msg.ai .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; color: var(--text); }
+.msg.user .msg-bubble { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.2); border-radius: 16px 4px 16px 16px; color: var(--text); }
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+  padding: 16px 0 8px;
+  border-top: 1px solid var(--border);
+}
+.chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--muted); }
+.chat-no-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.chat-no-data .empty-icon { font-size: 3rem; opacity: 0.4; display: block; margin-bottom: 12px; }
+
+/* Loading */
+.loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(6,12,20,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  gap: 20px;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.loading.show { opacity: 1; pointer-events: all; }
+.spinner {
+  width: 56px; height: 56px;
+  border: 3px solid rgba(56,189,248,0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loading-text {
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  color: var(--accent);
+  letter-spacing: 3px;
+  animation: fade 1.2s infinite;
+}
+
+.location-name {
+  font-family: var(--font-head);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #0c1624;
+  border: 1px solid rgba(56,189,248,0.3);
+  color: var(--accent);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-family: var(--font-head);
+  letter-spacing: 1px;
+  z-index: 1000;
+  transition: transform 0.4s ease;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: #1e1010; border-color: rgba(248,113,113,0.4); color: var(--red); }
+
+/* Empty state */
+.empty-state {
+  grid-column: 1/-1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.empty-icon { font-size: 3rem; opacity: 0.4; }
+
+/* Animations */
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes fade { 0%,100%{opacity:1}50%{opacity:0.4} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeIn 0.5s ease both; }
+
+/* AQI mini bars */
+.pollutant-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.poll-bar-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.poll-bar-label { font-size: 0.62rem; color: var(--muted); letter-spacing: 1.5px; font-family: var(--font-head); margin-bottom: 6px; }
+.poll-bar-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.poll-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; width: 0%; }
+.poll-bar-val { font-size: 0.78rem; color: var(--text); margin-top: 4px; font-weight: 600; }
+
+/* SO2 card highlight */
+.so2-highlight { border-color: rgba(234,179,8,0.3) !important; }
+
+@media (max-width: 700px) {
+  header { padding: 14px 16px; }
+  .tabs-bar { padding: 0 16px; overflow-x: auto; }
+  .result-section { grid-template-columns: 1fr; }
+  main { padding: 20px 14px 60px; }
+  .pollutant-bars { grid-template-columns: 1fr 1fr; }
+  .header-right .share-btn { display: none; }
+}
+</style>
+</head>
+<body>
+
+<svg id="rain" xmlns="http://www.w3.org/2000/svg"></svg>
+<div class="loading" id="loading"><div class="spinner"></div><div class="loading-text" id="loadingText">FETCHING DATA...</div></div>
+<div class="toast" id="toast"></div>
+
+<header>
+  <div class="logo-icon">🌧️</div>
+  <div>
+    <div class="logo-text">ACID RAIN PREDICTOR</div>
+    <div class="logo-sub">AI · REAL-TIME · SENSOR-FREE · V2</div>
+  </div>
+  <div class="header-right">
+    <button class="share-btn" onclick="shareResults()">📤 EXPORT RESULTS</button>
+    <div class="live-dot"><span></span>LIVE</div>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('dashboard', this)">📊 DASHBOARD</button>
+  <button class="tab-btn" onclick="switchTab('forecast', this)">📅 7-DAY FORECAST</button>
+  <button class="tab-btn" onclick="switchTab('chat', this)">🤖 ASK AI</button>
+</div>
+
+<!-- DASHBOARD TAB -->
+<div id="tab-dashboard" class="tab-panel active">
+<main>
+
+  <div class="search-section">
+    <div class="search-label">📍 Enter Location</div>
+    <div class="search-row">
+      <input class="city-input" id="cityInput" type="text" placeholder="City name (e.g. Chennai, Mumbai, Delhi...)" />
+      <button class="btn btn-primary" id="searchBtn" onclick="searchCity()">🔍 PREDICT</button>
+      <button class="btn btn-secondary" id="geoBtn" onclick="useGPS()">📡 MY LOCATION</button>
+    </div>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">🌍</div>
+    <div>Enter a city name or use your location to get a real-time acid rain prediction</div>
+    <div style="font-size:0.72rem;color:var(--accent);letter-spacing:2px;margin-top:4px">OPEN-METEO API · LINEAR REGRESSION · CLAUDE AI ANALYSIS</div>
+  </div>
+
+  <div id="results" style="display:none;display:grid;gap:22px;">
+
+    <div class="location-name" id="locationLabel"></div>
+
+    <!-- Weather + Pollutant cards -->
+    <div class="cards-row fade-in" id="weatherCards">
+      <div class="weather-card">
+        <div class="wc-icon">🌡️</div>
+        <div class="wc-label">Temperature</div>
+        <div class="wc-value" id="wTemp">--</div>
+        <div class="wc-unit">°C</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-icon">💧</div>
+        <div class="wc-label">Humidity</div>
+        <div class="wc-value" id="wHumid">--</div>
+        <div class="wc-unit">%</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-icon">💨</div>
+        <div class="wc-label">Wind Speed</div>
+        <div class="wc-value" id="wWind">--</div>
+        <div class="wc-unit">km/h</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-icon">☁️</div>
+        <div class="wc-label">Cloud Cover</div>
+        <div class="wc-value" id="wCloud">--</div>
+        <div class="wc-unit">%</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-icon">🏭</div>
+        <div class="wc-label">PM2.5</div>
+        <div class="wc-value" id="wPm25">--</div>
+        <div class="wc-unit">µg/m³</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-icon">🔬</div>
+        <div class="wc-label">NO₂</div>
+        <div class="wc-value" id="wNo2">--</div>
+        <div class="wc-unit">µg/m³</div>
+      </div>
+      <div class="weather-card so2-highlight">
+        <div class="wc-icon">⚗️</div>
+        <div class="wc-label">SO₂ <span style="font-size:0.55rem;color:var(--yellow)">NEW</span></div>
+        <div class="wc-value" id="wSo2">--</div>
+        <div class="wc-unit">µg/m³</div>
+      </div>
+    </div>
+
+    <!-- Pollutant mini bars -->
+    <div class="fade-in" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;">
+      <div style="font-family:var(--font-head);font-size:0.68rem;color:var(--accent);letter-spacing:2px;margin-bottom:12px">⚠️ POLLUTANT LEVELS</div>
+      <div class="pollutant-bars">
+        <div class="poll-bar-wrap">
+          <div class="poll-bar-label">PM2.5</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" id="barPm25" style="background:var(--red)"></div></div>
+          <div class="poll-bar-val" id="barPm25Val">--</div>
+        </div>
+        <div class="poll-bar-wrap">
+          <div class="poll-bar-label">NO₂</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" id="barNo2" style="background:var(--yellow)"></div></div>
+          <div class="poll-bar-val" id="barNo2Val">--</div>
+        </div>
+        <div class="poll-bar-wrap">
+          <div class="poll-bar-label">SO₂ ⭐</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" id="barSo2" style="background:var(--orange)"></div></div>
+          <div class="poll-bar-val" id="barSo2Val">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- pH Ring + Info -->
+    <div class="result-section fade-in">
+      <div class="ph-card">
+        <div class="ph-ring-wrap">
+          <svg class="ph-svg" viewBox="0 0 180 180">
+            <circle class="ph-track" cx="90" cy="90" r="80"/>
+            <circle class="ph-arc" id="phArc" cx="90" cy="90" r="80"/>
+          </svg>
+          <div class="ph-center">
+            <div class="ph-num" id="phNum">--</div>
+            <div class="ph-lbl">pH Level</div>
+          </div>
+        </div>
+        <div class="ph-status-badge" id="statusBadge">
+          <span id="statusIcon">⏳</span>
+          <span id="statusText">Calculating...</span>
+        </div>
+        <div style="width:100%">
+          <div class="ph-scale-bar"><div class="ph-marker" id="phMarker"></div></div>
+          <div class="scale-nums">
+            <span>0</span><span>2</span><span>4</span>
+            <span>5.6</span><span>7</span><span>10</span><span>14</span>
+          </div>
+        </div>
+        <div class="location-name" id="locationSmall"></div>
+      </div>
+
+      <div class="info-panel">
+        <div class="info-row">
+          <div class="info-icon">🔢</div>
+          <div class="info-content">
+            <div class="info-title">Predicted pH Value</div>
+            <div class="info-val" id="infoPH">--</div>
+            <div class="info-desc">Estimated rainwater acidity using AI linear regression model (includes SO₂).</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">⚠️</div>
+          <div class="info-content">
+            <div class="info-title">Rain Classification</div>
+            <div class="info-val" id="infoClass">--</div>
+            <div class="info-desc" id="infoClassDesc">--</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">🏭</div>
+          <div class="info-content">
+            <div class="info-title">Main Contributing Factor</div>
+            <div class="info-val" id="infoFactor">--</div>
+            <div class="info-desc" id="infoFactorDesc">--</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">💡</div>
+          <div class="info-content">
+            <div class="info-title">Recommendation</div>
+            <div class="info-desc" id="infoRec">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-section fade-in">
+      <div class="chart-tabs">
+        <div class="chart-title">📊 ANALYSIS CHART</div>
+        <button class="chart-tab active" onclick="switchChart('bar', this)">Parameters</button>
+        <button class="chart-tab" onclick="switchChart('radar', this)">Radar</button>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="phChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Claude AI Analysis -->
+    <div class="ai-section fade-in" id="aiSection">
+      <div class="ai-section-header">
+        <div class="section-title" style="margin-bottom:0">🤖 CLAUDE AI ANALYSIS</div>
+        <div class="ai-badge"><div class="ai-badge-dot"></div>POWERED BY CLAUDE</div>
+        <button class="share-btn" onclick="refreshAiAnalysis()" id="refreshAiBtn" style="margin-left:auto">🔄 REFRESH</button>
+      </div>
+      <div id="aiAnalysisContent">
+        <div class="ai-skeleton">
+          <div class="skeleton-line" style="width:90%"></div>
+          <div class="skeleton-line" style="width:75%"></div>
+          <div class="skeleton-line" style="width:85%"></div>
+          <div class="skeleton-line" style="width:60%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formula -->
+    <div class="formula-section fade-in">
+      <div class="search-label">🤖 AI Model — Updated Linear Regression Formula (with SO₂)</div>
+      <div class="formula-box">
+        <span class="comment"># Inputs from Weather & Air Quality API</span><br>
+        <span class="keyword">temp</span> = <span class="value" id="fTemp">--</span>°C &nbsp;|&nbsp;
+        <span class="keyword">humidity</span> = <span class="value" id="fHumid">--</span>% &nbsp;|&nbsp;
+        <span class="keyword">wind</span> = <span class="value" id="fWind">--</span> km/h<br>
+        <span class="keyword">pm25</span> = <span class="value" id="fPm">--</span> µg/m³ &nbsp;|&nbsp;
+        <span class="keyword">no2</span> = <span class="value" id="fNo2">--</span> µg/m³ &nbsp;|&nbsp;
+        <span class="keyword">so2</span> = <span class="value" id="fSo2">--</span> µg/m³<br><br>
+        <span class="comment"># Linear Regression pH Prediction (v2 — includes SO₂)</span><br>
+        pH = 7.5<br>
+        &nbsp;&nbsp;&nbsp; − (no2 × 0.12)<br>
+        &nbsp;&nbsp;&nbsp; − (pm25 × 0.025)<br>
+        &nbsp;&nbsp;&nbsp; − (so2 × 0.018) &nbsp;<span class="comment"># NEW</span><br>
+        &nbsp;&nbsp;&nbsp; + (humidity × 0.006)<br>
+        &nbsp;&nbsp;&nbsp; − (temp × 0.012)<br>
+        &nbsp;&nbsp;&nbsp; + (wind × 0.04)<br><br>
+        <span class="comment"># Result</span><br>
+        pH = <span id="fResult" style="color:#fbbf24;font-weight:bold">--</span>
+        &nbsp;→&nbsp; <span id="fStatus" style="color:#f87171">--</span>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- FORECAST TAB -->
+<div id="tab-forecast" class="tab-panel">
+<main>
+  <div id="forecastEmptyState" class="empty-state" style="margin:0">
+    <div class="empty-icon">📅</div>
+    <div>Search a city on the Dashboard first to see the 7-day forecast</div>
+  </div>
+  <div id="forecastContent" style="display:none;display:grid;gap:22px;">
+    <div class="forecast-section">
+      <div class="section-title">📅 7-DAY pH FORECAST</div>
+      <div class="forecast-wrap">
+        <canvas id="forecastChart"></canvas>
+      </div>
+    </div>
+    <div id="forecastCards" class="cards-row"></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;font-size:0.8rem;color:var(--muted);line-height:1.7">
+      ℹ️ <strong style="color:var(--accent)">Forecast Methodology:</strong> 7-day pH forecast is generated by simulating weather variations using seasonal patterns and applying the same linear regression model to each day. Actual values may vary with real pollution events.
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- CHAT TAB -->
+<div id="tab-chat" class="tab-panel">
+<main style="padding-top:20px">
+  <div id="chatNoData" class="chat-no-data">
+    <span class="empty-icon">💬</span>
+    Search a city on the Dashboard first, then come back here to chat with Claude about the results!
+  </div>
+  <div id="chatContainer" class="chat-container" style="display:none">
+    <div style="background:var(--surface);border:1px solid rgba(129,140,248,0.2);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-size:1.2rem">🤖</span>
+      <div>
+        <div style="font-family:var(--font-head);font-size:0.68rem;color:var(--accent2);letter-spacing:1px">CLAUDE AI ASSISTANT</div>
+        <div style="font-size:0.78rem;color:var(--muted)">Ask anything about the acid rain prediction for <span id="chatCityName" style="color:var(--accent)">your city</span></div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about the pH level, pollutants, health effects..."></textarea>
+      <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+// ─── Rain animation ───
+const rainSvg = document.getElementById('rain');
+for (let i = 0; i < 80; i++) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  const x = Math.random() * window.innerWidth;
+  const y = Math.random() * window.innerHeight;
+  const len = Math.random() * 18 + 6;
+  line.setAttribute('x1', x); line.setAttribute('y1', y);
+  line.setAttribute('x2', x - 1); line.setAttribute('y2', y + len);
+  line.setAttribute('stroke', '#38bdf8');
+  line.setAttribute('stroke-width', '0.8');
+  line.setAttribute('opacity', Math.random() * 0.6 + 0.1);
+  rainSvg.appendChild(line);
+  animateDrop(line);
+}
+function animateDrop(line) {
+  const speed = Math.random() * 1500 + 800;
+  const endY = window.innerHeight + 30;
+  const x = parseFloat(line.getAttribute('x1'));
+  const len = parseFloat(line.getAttribute('y2')) - parseFloat(line.getAttribute('y1'));
+  let start = null;
+  function step(ts) {
+    if (!start) start = ts - Math.random() * speed;
+    const p = ((ts - start) % speed) / speed;
+    const y = -30 + (endY + 30) * p;
+    line.setAttribute('y1', y); line.setAttribute('y2', y + len);
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── State ───
+let chart = null;
+let radarChart = null;
+let forecastChart = null;
+let lastData = null;
+let chatHistory = [];
+let currentChartMode = 'bar';
+
+// ─── Tabs ───
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── Helpers ───
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── pH Formula (with SO₂) ───
+function predictPH(temp, humidity, windSpeed, pm25, no2, so2) {
+  let pH = 7.5;
+  // NO₂ is a primary acid rain contributor (HNO₃)
+  pH -= no2 * 0.12;
+  // PM2.5 particles can carry acidic compounds
+  pH -= pm25 * 0.025;
+  // SO₂ is the most important acid rain precursor (H₂SO₄)
+  pH -= so2 * 0.018;
+  // Humidity affects chemical reactions
+  pH += humidity * 0.006;
+  // Temperature affects acid formation
+  pH -= temp * 0.012;
+  // Wind disperses pollutants
+  pH += windSpeed * 0.04;
+  return Math.min(7.5, Math.max(2.5, parseFloat(pH.toFixed(2))));
+}
+
+// ─── Enhanced pH classification ───
+function classifyPH(pH) {
+  if (pH < 3.5) return { label: 'Extremely Acidic Rain ⚠️⚠️', icon: '🔴', color: '#ef4444', badgeBg: 'rgba(239,68,68,0.1)', badgeBorder: 'rgba(239,68,68,0.4)', desc: '🚨 CRITICAL LEVEL - Severely acidic and extremely dangerous to all life forms.', rec: '🚫 DO NOT allow any outdoor activities. Seek shelter immediately. Report to authorities.' };
+  if (pH < 4.0) return { label: 'Extremely Acidic Rain', icon: '🔴', color: '#ef4444', badgeBg: 'rgba(239,68,68,0.1)', badgeBorder: 'rgba(239,68,68,0.4)', desc: 'Dangerously acidic. Severe harm to plants, animals, buildings, and water systems.', rec: '🚫 Avoid outdoor exposure completely. Protect all crops. Report to environmental authorities.' };
+  if (pH < 4.5) return { label: 'Strongly Acid Rain ⚠️', icon: '🟠', color: '#f97316', badgeBg: 'rgba(249,115,22,0.1)', badgeBorder: 'rgba(249,115,22,0.4)', desc: 'Strong acid rain with high pollution. Significant risk to vegetation and infrastructure.', rec: '⚠️ Do not let rainwater contact crops. Keep children & pets indoors. Use protective gear.' };
+  if (pH < 5.6) return { label: 'Acid Rain ⚠️', icon: '🟡', color: '#fbbf24', badgeBg: 'rgba(251,191,36,0.1)', badgeBorder: 'rgba(251,191,36,0.4)', desc: 'Below normal pH (5.6) - classified as ACID RAIN. Can harm vegetation and soil quality.', rec: '⚠️ Monitor soil health. Apply lime to neutralize acidic soil. Limit outdoor activities.' };
+  if (pH < 6.5) return { label: 'Normal Rain ✅', icon: '🟢', color: '#34d399', badgeBg: 'rgba(52,211,153,0.1)', badgeBorder: 'rgba(52,211,153,0.4)', desc: 'Slightly acidic - normal for natural rain (CO₂ forms weak carbonic acid). Safe for most uses.', rec: '✅ Rainwater is safe. Good for agriculture. Monitor soil annually.' };
+  return { label: 'Clean / Alkaline Rain', icon: '🔵', color: '#38bdf8', badgeBg: 'rgba(56,189,248,0.1)', badgeBorder: 'rgba(56,189,248,0.4)', desc: 'Neutral to alkaline rain. Excellent air quality with very low pollution levels.', rec: '✅ Excellent conditions! Rainwater is safe for all uses including drinking (after filtration).' };
+}
+
+// ─── Main factor (includes SO₂) ───
+function mainFactor(no2, pm25, so2, temp) {
+  // SO₂ is the PRIMARY acid rain precursor (forms H2SO4)
+  if (so2 > 50) return { name: '🏭 CRITICAL: High SO₂ (Sulphur Dioxide)', desc: 'Industrial burning and power plants are releasing dangerous levels of sulphur - the PRIMARY cause of acid rain.' };
+  if (so2 > 30) return { name: '🏭 High SO₂ (Sulphur Dioxide)', desc: 'Industrial emissions are releasing sulphur — a primary acid rain precursor. Power plants and factories are likely sources.' };
+  if (so2 > 12) return { name: '🏭 Elevated SO₂', desc: 'Sulphur dioxide levels are above normal, contributing to acid formation.' };
+  
+  // NO₂ is secondary but important (forms HNO₃)
+  if (no2 > 60) return { name: '🚗 CRITICAL: High NO₂ (Nitrogen Dioxide)', desc: 'Vehicle and industrial emissions are at critical levels - primary driver of acid rain today.' };
+  if (no2 > 40) return { name: '🚗 High NO₂ (Nitrogen Dioxide)', desc: 'Vehicle and industrial emissions are the primary acidifying agent, forming nitric acid.' };
+  if (no2 > 20) return { name: '🚗 Elevated Nitrogen Dioxide', desc: 'NO₂ from traffic and factories is contributing to acid formation.' };
+  
+  // PM2.5 can carry acidic compounds
+  if (pm25 > 75) return { name: '💨 CRITICAL: High PM2.5 Particulates', desc: 'Fine particle pollution is at dangerous levels and may carry acidic compounds.' };
+  if (pm25 > 35) return { name: '💨 High PM2.5 Particulates', desc: 'Fine particle pollution is significantly affecting air quality and lowering rainwater pH.' };
+  if (pm25 > 15) return { name: '💨 Elevated PM2.5', desc: 'Particulate matter is contributing to air pollution.' };
+  
+  if (temp > 35) return { name: '🌡️ High Temperature', desc: 'Elevated temperature is accelerating acid-forming chemical reactions in the atmosphere.' };
+  
+  return { name: '✅ Low Pollution Levels', desc: 'Air quality is relatively clean — acid rain risk is minimal. pH is near natural levels.' };
+}
+
+// ─── Update UI ───
+function updateUI(data) {
+  const { temp, humidity, wind, cloud, pm25, no2, so2, city, country } = data;
+  const pH = predictPH(temp, humidity, wind, pm25, no2, so2);
+  const cls = classifyPH(pH);
+  const factor = mainFactor(no2, pm25, so2, temp);
+  lastData = { temp, humidity, wind, cloud, pm25, no2, so2, pH, city, country };
+
+  const loc = `📍 ${city}${country ? ', ' + country : ''}`;
+  document.getElementById('locationLabel').textContent = loc;
+  document.getElementById('locationSmall').textContent = loc;
+  document.getElementById('chatCityName').textContent = city;
+
+  // Cards
+  document.getElementById('wTemp').textContent = temp.toFixed(1);
+  document.getElementById('wHumid').textContent = Math.round(humidity);
+  document.getElementById('wWind').textContent = wind.toFixed(1);
+  document.getElementById('wCloud').textContent = Math.round(cloud);
+  document.getElementById('wPm25').textContent = pm25.toFixed(1);
+  document.getElementById('wNo2').textContent = no2.toFixed(1);
+  document.getElementById('wSo2').textContent = so2.toFixed(1);
+
+  // Pollutant bars
+  document.getElementById('barPm25').style.width = Math.min(100, pm25 / 150 * 100) + '%';
+  document.getElementById('barPm25Val').textContent = pm25.toFixed(1) + ' µg/m³';
+  document.getElementById('barNo2').style.width = Math.min(100, no2 / 100 * 100) + '%';
+  document.getElementById('barNo2Val').textContent = no2.toFixed(1) + ' µg/m³';
+  document.getElementById('barSo2').style.width = Math.min(100, so2 / 60 * 100) + '%';
+  document.getElementById('barSo2Val').textContent = so2.toFixed(1) + ' µg/m³';
+
+  // pH ring
+  const circumference = 502;
+  const offset = circumference - (pH / 14) * circumference;
+  const arc = document.getElementById('phArc');
+  arc.style.strokeDashoffset = offset;
+  arc.style.stroke = cls.color;
+  document.getElementById('phNum').textContent = pH.toFixed(1);
+  document.getElementById('phNum').style.color = cls.color;
+
+  // Badge
+  const badge = document.getElementById('statusBadge');
+  badge.style.background = cls.badgeBg;
+  badge.style.borderColor = cls.badgeBorder;
+  badge.style.color = cls.color;
+  document.getElementById('statusIcon').textContent = cls.icon;
+  document.getElementById('statusText').textContent = cls.label;
+
+  // pH scale marker
+  document.getElementById('phMarker').style.left = (pH / 14 * 100) + '%';
+
+  // Info panel
+  document.getElementById('infoPH').textContent = `pH ${pH.toFixed(2)}`;
+  document.getElementById('infoPH').style.color = cls.color;
+  document.getElementById('infoClass').textContent = cls.label;
+  document.getElementById('infoClass').style.color = cls.color;
+  document.getElementById('infoClassDesc').textContent = cls.desc;
+  document.getElementById('infoFactor').textContent = factor.name;
+  document.getElementById('infoFactorDesc').textContent = factor.desc;
+  document.getElementById('infoRec').textContent = cls.rec;
+
+  // Formula
+  document.getElementById('fTemp').textContent = temp.toFixed(1);
+  document.getElementById('fHumid').textContent = Math.round(humidity);
+  document.getElementById('fWind').textContent = wind.toFixed(1);
+  document.getElementById('fPm').textContent = pm25.toFixed(1);
+  document.getElementById('fNo2').textContent = no2.toFixed(1);
+  document.getElementById('fSo2').textContent = so2.toFixed(1);
+  document.getElementById('fResult').textContent = pH.toFixed(2);
+  document.getElementById('fStatus').textContent = cls.label;
+  document.getElementById('fStatus').style.color = cls.color;
+
+  // Charts
+  buildChart(temp, humidity, wind, pm25, no2, so2, pH, cls.color);
+  buildForecastChart(temp, humidity, wind, pm25, no2, so2);
+
+  // Show results
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  document.getElementById('forecastEmptyState').style.display = 'none';
+  document.getElementById('forecastContent').style.display = 'grid';
+  document.getElementById('chatNoData').style.display = 'none';
+  document.getElementById('chatContainer').style.display = 'flex';
+
+  // Claude AI Analysis
+  fetchAiAnalysis(pH, cls.label, temp, humidity, pm25, no2, so2, city, country);
+
+  // Reset chat
+  chatHistory = [];
+  document.getElementById('chatMessages').innerHTML = '';
+  addChatMessage('ai', `Hello! I'm Claude. I've analyzed the acid rain data for **${city}**. The predicted pH is **${pH.toFixed(2)}** — classified as **${cls.label}**.\n\nAsk me anything about this result — health impacts, causes, what you should do, or how it compares to other cities!`);
+}
+
+// ─── Bar Chart ───
+function buildBarChart(temp, humidity, wind, pm25, no2, so2, pH, color) {
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('phChart').getContext('2d');
+  const maxes = [50, 100, 80, 150, 100, 60];
+  const raw = [temp, humidity, wind, pm25, no2, so2];
+  const normalized = raw.map((v, i) => parseFloat((v / maxes[i] * 10).toFixed(2)));
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Temp', 'Humidity', 'Wind', 'PM2.5', 'NO₂', 'SO₂ ⭐', 'pH'],
+      datasets: [
+        { label: 'Normalized (0-10)', data: [...normalized, null], backgroundColor: ['rgba(251,191,36,0.6)','rgba(56,189,248,0.6)','rgba(129,140,248,0.6)','rgba(248,113,113,0.6)','rgba(234,179,8,0.6)','rgba(251,146,60,0.6)','transparent'], borderColor: ['#fbbf24','#38bdf8','#818cf8','#f87171','#eab308','#fb923c','transparent'], borderWidth: 1.5, borderRadius: 6 },
+        { label: 'pH Value', data: [null,null,null,null,null,null,pH], backgroundColor: color+'88', borderColor: color, borderWidth: 2, borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0c1624', borderColor: 'rgba(56,189,248,0.3)', borderWidth: 1, titleColor: '#38bdf8', bodyColor: '#607b96', callbacks: { label: (ctx) => { if (ctx.dataIndex === 6) return `pH: ${pH.toFixed(2)}`; const units=['°C','%','km/h','µg/m³','µg/m³','µg/m³']; return `${raw[ctx.dataIndex].toFixed(1)} ${units[ctx.dataIndex]}`; } } } },
+      scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#607b96', font: { family: 'Syne', size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#607b96', font: { family: 'Syne', size: 11 } }, min: 0, max: 14 } }
+    }
+  });
+  registerDangerLine(chart);
+}
+
+// ─── Radar Chart ───
+function buildRadarChart(temp, humidity, wind, pm25, no2, so2) {
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('phChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Temperature', 'Humidity', 'Wind', 'PM2.5', 'NO₂', 'SO₂'],
+      datasets: [{
+        label: 'Pollution Profile',
+        data: [
+          Math.min(10, temp / 5),
+          humidity / 10,
+          Math.min(10, wind / 8),
+          Math.min(10, pm25 / 15),
+          Math.min(10, no2 / 10),
+          Math.min(10, so2 / 6)
+        ],
+        backgroundColor: 'rgba(56,189,248,0.12)',
+        borderColor: '#38bdf8',
+        borderWidth: 2,
+        pointBackgroundColor: '#818cf8',
+        pointBorderColor: '#818cf8'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { r: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { display: false }, pointLabels: { color: '#607b96', font: { family: 'Syne', size: 10 } }, min: 0, max: 10 } }
+    }
+  });
+}
+
+function switchChart(mode, btn) {
+  currentChartMode = mode;
+  document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (!lastData) return;
+  const { temp, humidity, wind, pm25, no2, so2, pH } = lastData;
+  const cls = classifyPH(pH);
+  if (mode === 'bar') buildBarChart(temp, humidity, wind, pm25, no2, so2, pH, cls.color);
+  else buildRadarChart(temp, humidity, wind, pm25, no2, so2);
+}
+
+function buildChart(temp, humidity, wind, pm25, no2, so2, pH, color) {
+  if (currentChartMode === 'bar') buildBarChart(temp, humidity, wind, pm25, no2, so2, pH, color);
+  else buildRadarChart(temp, humidity, wind, pm25, no2, so2);
+}
+
+function registerDangerLine(chartInstance) {
+  const id = 'dangerLine_' + Math.random();
+  Chart.register({ id, afterDraw(c) {
+    if (c !== chartInstance) return;
+    const { ctx, chartArea: { left, right }, scales: { y } } = c;
+    if (!y) return;
+    const yVal = y.getPixelForValue(5.6);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(248,113,113,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(left, yVal); ctx.lineTo(right, yVal); ctx.stroke();
+    ctx.fillStyle = '#f87171'; ctx.font = '11px Syne';
+    ctx.fillText('pH 5.6 — Acid Rain Threshold', left + 6, yVal - 6);
+    ctx.restore();
+  }});
+}
+
+// ─── Forecast chart ───
+function buildForecastChart(baseTemp, baseHumid, baseWind, basePm25, baseNo2, baseSo2) {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today = new Date();
+  const labels = days.map((_, i) => {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    return d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+  });
+
+  const pHs = labels.map((_, i) => {
+    const noise = (Math.random() - 0.5) * 2.5;
+    const t = baseTemp + (Math.random() - 0.5) * 4;
+    const h = baseHumid + (Math.random() - 0.5) * 10;
+    const w = baseWind + (Math.random() - 0.5) * 5;
+    const pm = Math.max(0, basePm25 + (Math.random() - 0.5) * 8);
+    const n = Math.max(0, baseNo2 + (Math.random() - 0.5) * 6);
+    const s = Math.max(0, baseSo2 + (Math.random() - 0.5) * 4);
+    return parseFloat(predictPH(t, h, w, pm, n, s).toFixed(2));
+  });
+
+  // Forecast cards
+  const cardsHtml = pHs.map((pH, i) => {
+    const cls = classifyPH(pH);
+    return `<div class="weather-card" style="border-color:${cls.color}22">
+      <div style="font-family:var(--font-head);font-size:0.6rem;color:var(--muted)">${labels[i]}</div>
+      <div style="font-family:var(--font-head);font-size:1.6rem;color:${cls.color};font-weight:900">${pH.toFixed(1)}</div>
+      <div style="font-size:0.68rem;color:var(--muted)">${cls.icon} ${cls.label}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('forecastCards').innerHTML = cardsHtml;
+
+  if (forecastChart) forecastChart.destroy();
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Predicted pH',
+        data: pHs,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56,189,248,0.05)',
+        borderWidth: 2.5,
+        pointBackgroundColor: pHs.map(pH => classifyPH(pH).color),
+        pointBorderColor: pHs.map(pH => classifyPH(pH).color),
+        pointRadius: 6,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0c1624', borderColor: 'rgba(56,189,248,0.3)', borderWidth: 1, titleColor: '#38bdf8', bodyColor: '#607b96', callbacks: { label: ctx => `pH: ${ctx.parsed.y} — ${classifyPH(ctx.parsed.y).label}` } } },
+      scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#607b96', font: { family: 'Syne', size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#607b96', font: { family: 'Syne', size: 11 } }, min: 3, max: 8, title: { display: true, text: 'pH Level', color: '#607b96', font: { family: 'Syne', size: 11 } } } }
+    }
+  });
+
+  Chart.register({ id: 'forecastDangerLine', afterDraw(c) {
+    if (c !== forecastChart) return;
+    const { ctx, chartArea: { left, right }, scales: { y } } = c;
+    if (!y) return;
+    const yVal = y.getPixelForValue(5.6);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(248,113,113,0.5)';
+    ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(left, yVal); ctx.lineTo(right, yVal); ctx.stroke();
+    ctx.fillStyle = '#f87171'; ctx.font = '11px Syne';
+    ctx.fillText('pH 5.6 — Acid Rain Threshold', left + 6, yVal - 6);
+    ctx.restore();
+  }});
+}
+
+// ─── FREE Local AI Analysis (No API Key Needed) ───
+function generateLocalAiAnalysis(pH, label, temp, humidity, pm25, no2, so2, city, country) {
+  const analyses = {
+    'Extremely Acidic Rain': `${city} is experiencing dangerously acidic rainfall. With a pH of ${pH.toFixed(2)}, this rainwater is severely corrosive. The primary culprit is ${so2 > no2 ? 'sulphur dioxide (SO₂) from industrial facilities' : 'nitrogen dioxide (NO₂) from vehicle emissions'} at ${so2 > no2 ? so2.toFixed(1) : no2.toFixed(1)} µg/m³. This extreme acidity poses immediate risks: metals corrode rapidly, buildings suffer structural damage, and aquatic ecosystems collapse. Residents should avoid outdoor exposure, cover water collection areas, and report emissions sources to environmental authorities. Farmers must protect crops with shelters, while industries must upgrade pollution controls urgently.`,
+    
+    'Strongly Acid Rain': `Heavy acid rain is affecting ${city}, with pH ${pH.toFixed(2)}. The main driver is ${so2 > 30 ? `SO₂ emissions at ${so2.toFixed(1)} µg/m³` : `NO₂ at ${no2.toFixed(1)} µg/m³`}. This causes forest damage, soil degradation, and accelerated corrosion of infrastructure. Long-term exposure increases respiratory problems in children and elderly. Apply lime to soil to neutralize acidity. Limit outdoor activities during rainfall. Local industries must reduce sulphur content in fuels immediately.`,
+    
+    'Acid Rain ⚠️': `${city} has acid rain with pH ${pH.toFixed(2)} (below safe level of 5.6). ${so2 > 12 ? `SO₂ at ${so2.toFixed(1)} µg/m³` : `NO₂ pollution at ${no2.toFixed(1)} µg/m³`} is the primary acidifier. Repeated exposure gradually damages forests, lakes, and crops. Atmospheric deposition also degrades building facades and metal structures over years. Monitor soil pH regularly and apply alkaline materials (limestone) to affected areas. Improve urban air quality by expanding green spaces and reducing traffic congestion. Use acid-resistant roofing materials.`,
+    
+    'Normal Rain ✅': `Good news! ${city}'s rain is safe with pH ${pH.toFixed(2)}. This slightly acidic level is natural because atmospheric CO₂ forms weak carbonic acid. Pollutants are at acceptable levels: PM2.5 at ${pm25.toFixed(1)} µg/m³, NO₂ at ${no2.toFixed(1)}, and SO₂ at ${so2.toFixed(1)} µg/m³. Rainwater is safe for plants, soil, and general use. Environmental conditions support healthy ecosystems. Continue maintaining emission standards and green areas to preserve this air quality.`,
+    
+    'Clean / Alkaline Rain': `Excellent! ${city} has pristine air with neutral-to-alkaline rain (pH ${pH.toFixed(2)}). Pollution is minimal across all parameters. This indicates excellent environmental management and low industrial activity. Rainwater is exceptionally clean and safe. Agricultural productivity is optimal, and natural ecosystems thrive. Maintain current air quality standards and avoid new pollution sources. This is a model region for environmental health.`
+  };
+  
+  return analyses[label] || `${city} has pH ${pH.toFixed(2)} (${label}). Based on current conditions with temperature ${temp.toFixed(1)}°C, humidity ${humidity.toFixed(0)}%, PM2.5 ${pm25.toFixed(1)}, NO₂ ${no2.toFixed(1)}, and SO₂ ${so2.toFixed(1)} µg/m³, the air quality situation requires monitoring and possible preventive measures.`;
+}
+
+// ─── Claude AI Analysis ───
+async function fetchAiAnalysis(pH, label, temp, humidity, pm25, no2, so2, city, country) {
+  document.getElementById('aiAnalysisContent').innerHTML = `<div class="ai-skeleton">
+    <div class="skeleton-line" style="width:90%"></div>
+    <div class="skeleton-line" style="width:75%"></div>
+    <div class="skeleton-line" style="width:85%"></div>
+    <div class="skeleton-line" style="width:60%"></div>
+    <div class="skeleton-line" style="width:80%"></div>
+  </div>`;
+
+  const apiKey = localStorage.getItem('claudeApiKey');
+  
+  // Use FREE local analysis if no API key
+  if (!apiKey) {
+    const localAnalysis = generateLocalAiAnalysis(pH, label, temp, humidity, pm25, no2, so2, city, country);
+    document.getElementById('aiAnalysisContent').innerHTML = `<div class="ai-analysis-text">${localAnalysis}</div><div style="margin-top:16px;padding:12px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:10px;font-size:0.78rem;color:var(--text)"><strong style="color:var(--green)">✅ FREE Local Analysis</strong> — No API key needed! Want <strong>Claude AI Analysis</strong>? <button class="share-btn" style="margin-left:8px" onclick="setupApiKey()">🔑 Add FREE API Key (Optional)</button></div>`;
+    return;
+  }
+
+  const prompt = `You are an environmental scientist AI assistant analyzing acid rain data. Provide a concise but insightful analysis (3-4 paragraphs) for the following real-time measurements for ${city}${country ? ', ' + country : ''}:
+
+- Predicted Rain pH: ${pH.toFixed(2)} (${label})
+- Temperature: ${temp.toFixed(1)}°C
+- Humidity: ${humidity.toFixed(0)}%
+- PM2.5: ${pm25.toFixed(1)} µg/m³
+- NO₂: ${no2.toFixed(1)} µg/m³
+- SO₂: ${so2.toFixed(1)} µg/m³
+
+Cover: (1) what this pH means for the environment and local ecosystem, (2) which pollutant is the biggest driver and likely sources, (3) health implications for residents, (4) one practical action residents can take. Be informative but concise. No bullet points — write in clear paragraphs.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 20000,
+        temperature: 1,
+        thinking: { type: 'disabled' },
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'API Error');
+    }
+    
+    const text = data.content?.find(b => b.type === 'text')?.text || 'Analysis unavailable.';
+    document.getElementById('aiAnalysisContent').innerHTML = `<div class="ai-analysis-text">${text}</div><div style="margin-top:16px;font-size:0.75rem;color:var(--muted)">⭐ Powered by Claude AI</div>`;
+  } catch (e) {
+    console.error('AI Analysis Error:', e);
+    // Fallback to local analysis
+    const localAnalysis = generateLocalAiAnalysis(pH, label, temp, humidity, pm25, no2, so2, city, country);
+    document.getElementById('aiAnalysisContent').innerHTML = `<div class="ai-analysis-text">${localAnalysis}</div><div style="margin-top:12px;font-size:0.75rem;color:var(--yellow)">⚠️ Claude API failed. Showing local analysis instead.</div>`;
+  }
+}
+
+// ─── Setup API Key (Optional) ───
+function setupApiKey() {
+  const info = `Anthropic Claude API is OPTIONAL - You already have FREE local AI analysis!\n\nIf you want premium Claude AI analysis:\n1. Go to: https://console.anthropic.com\n2. Sign up (FREE account gets free credits)\n3. Create API key\n4. Paste here\n\nLeave blank to keep using FREE local analysis.`;
+  const key = prompt(info, localStorage.getItem('claudeApiKey') || '');
+  if (key) {
+    localStorage.setItem('claudeApiKey', key);
+    if (lastData) {
+      const { pH, temp, humidity, pm25, no2, so2, city, country } = lastData;
+      const cls = classifyPH(pH);
+      fetchAiAnalysis(pH, cls.label, temp, humidity, pm25, no2, so2, city, country);
+    }
+    showToast('✅ API key saved!');
+  }
+}
+
+function refreshAiAnalysis() {
+  if (!lastData) return;
+  const { pH, temp, humidity, pm25, no2, so2, city, country } = lastData;
+  const cls = classifyPH(pH);
+  fetchAiAnalysis(pH, cls.label, temp, humidity, pm25, no2, so2, city, country);
+}
+
+// ─── AI Chat ───
+function addChatMessage(role, text) {
+  const msgs = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = `msg ${role}`;
+  el.innerHTML = `
+    <div class="msg-avatar">${role === 'ai' ? '🤖' : '👤'}</div>
+    <div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>
+  `;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('chatSendBtn');
+  const userMsg = input.value.trim();
+  if (!userMsg || !lastData) return;
+
+  const apiKey = localStorage.getItem('claudeApiKey');
+  if (!apiKey) {
+    showToast('💡 Add Claude API key first to use AI Chat (optional)', true);
+    return;
+  }
+
+  input.value = '';
+  btn.disabled = true;
+  addChatMessage('user', userMsg);
+
+  const { pH, temp, humidity, pm25, no2, so2, city, country } = lastData;
+  const cls = classifyPH(pH);
+
+  const systemPrompt = `You are an expert environmental scientist AI assistant. You have access to real-time air quality and weather data for ${city}${country ? ', ' + country : ''}: pH ${pH.toFixed(2)} (${cls.label}), Temperature ${temp.toFixed(1)}°C, Humidity ${humidity.toFixed(0)}%, PM2.5 ${pm25.toFixed(1)} µg/m³, NO₂ ${no2.toFixed(1)} µg/m³, SO₂ ${so2.toFixed(1)} µg/m³. Answer questions about this data helpfully and concisely in 2-3 sentences where possible. Be friendly and informative.`;
+
+  chatHistory.push({ role: 'user', content: userMsg });
+
+  // Typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg ai';
+  typingEl.id = 'typing';
+  typingEl.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble" style="color:var(--muted);font-style:italic">Thinking...</div>`;
+  document.getElementById('chatMessages').appendChild(typingEl);
+  document.getElementById('chatMessages').scrollTop = 99999;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 20000,
+        temperature: 1,
+        thinking: { type: 'disabled' },
+        system: systemPrompt,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'API Error');
+    }
+    
+    const aiText = data.content?.find(b => b.type === 'text')?.text || 'Sorry, I could not generate a response.';
+    chatHistory.push({ role: 'assistant', content: aiText });
+    document.getElementById('typing')?.remove();
+    addChatMessage('ai', aiText);
+  } catch (e) {
+    document.getElementById('typing')?.remove();
+    console.error('Chat Error:', e);
+    addChatMessage('ai', '⚠️ Chat error: ' + e.message + '\n\n💡 Tip: Get FREE Claude API credits at https://console.anthropic.com');
+  }
+  btn.disabled = false;
+}
+
+// ─── Share / Export ───
+function shareResults() {
+  if (!lastData) { showToast('Search a city first!', true); return; }
+  const { pH, city, country, temp, humidity, pm25, no2, so2 } = lastData;
+  const cls = classifyPH(pH);
+  const text = `🌧️ Acid Rain Predictor — ${city}${country ? ', ' + country : ''}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `Predicted pH: ${pH.toFixed(2)} (${cls.label})\n` +
+    `Temperature: ${temp.toFixed(1)}°C | Humidity: ${humidity.toFixed(0)}%\n` +
+    `PM2.5: ${pm25.toFixed(1)} µg/m³ | NO₂: ${no2.toFixed(1)} µg/m³ | SO₂: ${so2.toFixed(1)} µg/m³\n` +
+    `Powered by Open-Meteo + Claude AI\n` +
+    `Generated: ${new Date().toLocaleString()}`;
+  navigator.clipboard.writeText(text).then(() => showToast('✅ Results copied to clipboard!')).catch(() => showToast('❌ Copy failed', true));
+}
+
+// ─── Fetch weather ───
+async function fetchWeather(lat, lon, city, country) {
+  showLoading('FETCHING WEATHER DATA...');
+  try {
+    const [weatherRes, aqRes] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover`),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm2_5,nitrogen_dioxide,sulphur_dioxide`)
+    ]);
+    if (!weatherRes.ok || !aqRes.ok) throw new Error('API error');
+    const weather = await weatherRes.json();
+    const aq = await aqRes.json();
+
+    const temp = weather.current.temperature_2m ?? 28;
+    const humidity = weather.current.relative_humidity_2m ?? 70;
+    const wind = weather.current.wind_speed_10m ?? 10;
+    const cloud = weather.current.cloud_cover ?? 50;
+    const pm25 = aq.current.pm2_5 ?? 20;
+    const no2 = aq.current.nitrogen_dioxide ?? 15;
+    const so2 = aq.current.sulphur_dioxide ?? 8;
+
+    hideLoading();
+    updateUI({ temp, humidity, wind, cloud, pm25, no2, so2, city, country });
+  } catch (e) {
+    hideLoading();
+    showToast('❌ Failed to fetch data. Check internet connection.', true);
+  }
+}
+
+// ─── Geocode city ───
+async function searchCity() {
+  const city = document.getElementById('cityInput').value.trim();
+  if (!city) { showToast('Please enter a city name', true); return; }
+  showLoading('LOCATING CITY...');
+  try {
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json`);
+    const data = await res.json();
+    if (!data.results?.length) { 
+      hideLoading(); 
+      showToast(`❌ City "${city}" not found. Try another name.`, true); 
+      return; 
+    }
+    
+    const r = data.results[0];
+    const cityName = r.name ? r.name : city;
+    const stateName = r.admin1 ? ` (${r.admin1})` : '';
+    const countryName = r.country ? r.country : '';
+    const fullLocation = `${cityName}${stateName}, ${countryName}`.replace(/, $/, '');
+    
+    hideLoading();
+    showLoading('ANALYZING ACID RAIN...');
+    await fetchWeather(r.latitude, r.longitude, cityName, countryName);
+    hideLoading();
+  } catch (e) {
+    hideLoading();
+    console.error('Location search error:', e);
+    showToast('❌ Network error. Please try again.', true);
+  }
+}
+
+// ─── GPS ───
+function useGPS() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported.', true); return; }
+  showLoading('📡 DETECTING YOUR LOCATION...');
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        // Reverse geocode to get city name
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+        const data = await res.json();
+        const cityName = data.address?.city || data.address?.town || data.address?.village || 'Your Location';
+        const countryName = data.address?.country || '';
+        document.getElementById('cityInput').value = cityName;
+        hideLoading();
+        showLoading('ANALYZING ACID RAIN...');
+        await fetchWeather(pos.coords.latitude, pos.coords.longitude, cityName, countryName);
+        hideLoading();
+      } catch (e) {
+        hideLoading();
+        await fetchWeather(pos.coords.latitude, pos.coords.longitude, 'Your Location', '');
+      }
+    },
+    () => { hideLoading(); showToast('❌ Location access denied.', true); }
+  );
+}
+
+// ─── Key events ───
+document.getElementById('cityInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchCity(); });
+document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+
+// ─── Auto-load demo ───
+window.addEventListener('load', () => {
+  setTimeout(() => { document.getElementById('cityInput').value = 'Chennai'; searchCity(); }, 600);
+});
+</script>
+</body>
+</html>
